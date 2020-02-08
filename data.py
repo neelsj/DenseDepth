@@ -14,8 +14,8 @@ def nyu_resize(img, resolution=480, padding=6):
     from skimage.transform import resize
     return resize(img, (resolution, int(resolution*4/3)), preserve_range=True, mode='reflect', anti_aliasing=True )
 
-def get_nyu_data(batch_size, nyu_data_zipfile='nyu_data.zip'):
-    data = extract_zip(nyu_data_zipfile)
+def get_nyu_data(batch_size, datadir='./', nyu_data_zipfile='nyu_data.zip'):
+    data = extract_zip(datadir + nyu_data_zipfile)
 
     nyu2_train = list((row.split(',') for row in (data['data/nyu2_train.csv']).decode("utf-8").split('\n') if len(row) > 0))
     nyu2_test = list((row.split(',') for row in (data['data/nyu2_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
@@ -30,11 +30,36 @@ def get_nyu_data(batch_size, nyu_data_zipfile='nyu_data.zip'):
 
     return data, nyu2_train, nyu2_test, shape_rgb, shape_depth
 
-def get_nyu_train_test_data(batch_size):
-    data, nyu2_train, nyu2_test, shape_rgb, shape_depth = get_nyu_data(batch_size)
+def get_nyu_train_test_data(batch_size, datadir='./', ):
+    data, nyu2_train, nyu2_test, shape_rgb, shape_depth = get_nyu_data(batch_size, datadir)
 
     train_generator = NYU_BasicAugmentRGBSequence(data, nyu2_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
     test_generator = NYU_BasicRGBSequence(data, nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
+
+    return train_generator, test_generator
+
+def get_r4dl_data(batch_size, datadir='./', nyu_data_zipfile='nyu_data.zip', r4dl_data_zipfile='R4DL_data_100.zip'):
+    nyu_data = extract_zip(datadir + nyu_data_zipfile)
+    r4dl_data = extract_zip(datadir + r4dl_data_zipfile)
+
+    r4dl_train = list((row.split(',') for row in (r4dl_data['R4DL_data_100/R4DL_train.csv']).decode("utf-8").split('\n') if len(row) > 0))
+    nyu2_test = list((row.split(',') for row in (nyu_data['data/nyu2_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
+
+    shape_rgb = (batch_size, 480, 640, 3)
+    shape_depth = (batch_size, 240, 320, 1)
+
+    # Helpful for testing...
+    if False:
+        r4dl_train = r4dl_train[:10]
+        nyu2_test = nyu2_test[:10]
+
+    return nyu_data, r4dl_data, r4dl_train, nyu2_test, shape_rgb, shape_depth
+
+def get_r4dl_train_test_data(batch_size, datadir='./'):
+    nyu_data, r4dl_data, r4dl_train, nyu2_test, shape_rgb, shape_depth = get_r4dl_data(batch_size, datadir)
+
+    train_generator = NYU_BasicAugmentRGBSequence(r4dl_data, r4dl_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
+    test_generator = NYU_BasicRGBSequence(nyu_data, nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
 
     return train_generator, test_generator
 
@@ -121,13 +146,13 @@ class NYU_BasicRGBSequence(Sequence):
 import cv2
 from skimage.transform import resize
 
-def get_unreal_data(batch_size, unreal_data_file='unreal_data.h5'):
+def get_unreal_data(batch_size, datadir='./', unreal_data_file='unreal_data.h5'):
     shape_rgb = (batch_size, 480, 640, 3)
     shape_depth = (batch_size, 240, 320, 1)
 
     # Open data file
     import h5py
-    data = h5py.File(unreal_data_file, 'r')
+    data = h5py.File(datadir + unreal_data_file, 'r')
 
     # Shuffle
     from sklearn.utils import shuffle
@@ -144,8 +169,8 @@ def get_unreal_data(batch_size, unreal_data_file='unreal_data.h5'):
 
     return data, unreal_train, unreal_test, shape_rgb, shape_depth
 
-def get_unreal_train_test_data(batch_size):
-    data, unreal_train, unreal_test, shape_rgb, shape_depth = get_unreal_data(batch_size)
+def get_unreal_train_test_data(batch_size, datadir='./'):
+    data, unreal_train, unreal_test, shape_rgb, shape_depth = get_unreal_data(batch_size, datadir)
     
     train_generator = Unreal_BasicAugmentRGBSequence(data, unreal_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
     test_generator = Unreal_BasicAugmentRGBSequence(data, unreal_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth, is_skip_policy=True)

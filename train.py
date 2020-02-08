@@ -5,7 +5,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
 from loss import depth_loss_function
 from utils import predict, save_images, load_test_data
 from model import create_model
-from data import get_nyu_train_test_data, get_unreal_train_test_data
+from data import get_nyu_train_test_data, get_unreal_train_test_data, get_r4dl_train_test_data
 from callbacks import get_nyu_callbacks
 
 from keras.optimizers import Adam
@@ -15,6 +15,7 @@ from keras.utils.vis_utils import plot_model
 # Argument Parser
 parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estimation via Transfer Learning')
 parser.add_argument('--data', default='nyu', type=str, help='Training dataset.')
+parser.add_argument('--datadir', default='./', type=str, help='Dataset directory.')
 parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
 parser.add_argument('--bs', type=int, default=4, help='Batch size')
 parser.add_argument('--epochs', type=int, default=20, help='Number of epochs')
@@ -28,6 +29,11 @@ parser.add_argument('--full', dest='full', action='store_true', help='Full train
 
 args = parser.parse_args()
 
+if ('PT_DATA_DIR' in os.environ):
+    data_dir = os.environ['PT_DATA_DIR'] + '/'
+else:
+    data_dir = args.datadir
+
 # Inform about multi-gpu training
 if args.gpus == 1: 
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpuids
@@ -36,21 +42,23 @@ else:
     print('Will use ' + str(args.gpus) + ' GPUs.')
 
 # Create the model
-model = create_model( existing=args.checkpoint )
+model_file = (data_dir + args.checkpoint) if (len(args.checkpoint) != 0) else ''
+model = create_model(existing = model_file)
 
 # Data loaders
-if args.data == 'nyu': train_generator, test_generator = get_nyu_train_test_data( args.bs )
-if args.data == 'unreal': train_generator, test_generator = get_unreal_train_test_data( args.bs )
+if args.data == 'nyu': train_generator, test_generator = get_nyu_train_test_data( args.bs,  data_dir)
+if args.data == 'unreal': train_generator, test_generator = get_unreal_train_test_data( args.bs, data_dir )
+if args.data == 'r4dl': train_generator, test_generator = get_r4dl_train_test_data( args.bs, data_dir )
 
 # Training session details
 runID = str(int(time.time())) + '-n' + str(len(train_generator)) + '-e' + str(args.epochs) + '-bs' + str(args.bs) + '-lr' + str(args.lr) + '-' + args.name
-outputPath = './models/'
+outputPath = data_dir + 'models/'
 runPath = outputPath + runID
 pathlib.Path(runPath).mkdir(parents=True, exist_ok=True)
 print('Output: ' + runPath)
 
  # (optional steps)
-if True:
+if False:
     # Keep a copy of this training script and calling arguments
     with open(__file__, 'r') as training_script: training_script_content = training_script.read()
     training_script_content = '#' + str(sys.argv) + '\n' + training_script_content

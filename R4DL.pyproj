@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{73ccb54d-c394-4589-ac27-1a9727d11c24}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>train.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>CondaEnv|CondaEnv|tensorflow1</InterpreterId>
+    <CommandLineArguments>--data r4dl --gpus 1 --bs 4 --datadir ../data/ --full --checkpoint models/1581201492-n25-e20-bs4-lr0.0001-densedepth_nyu/model.h5 --epochs 1</CommandLineArguments>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <Name>R4DL</Name>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="augment.py" />
+    <Compile Include="callbacks.py" />
+    <Compile Include="data.py" />
+    <Compile Include="demo.py" />
+    <Compile Include="evaluate.py" />
+    <Compile Include="layers.py" />
+    <Compile Include="loss.py" />
+    <Compile Include="model.py" />
+    <Compile Include="PyTorch\data.py" />
+    <Compile Include="PyTorch\loss.py" />
+    <Compile Include="PyTorch\model.py" />
+    <Compile Include="PyTorch\train.py" />
+    <Compile Include="PyTorch\utils.py" />
+    <Compile Include="Tensorflow\data.py" />
+    <Compile Include="Tensorflow\evaluate.py" />
+    <Compile Include="Tensorflow\loss.py" />
+    <Compile Include="Tensorflow\model.py" />
+    <Compile Include="test.py" />
+    <Compile Include="train.py" />
+    <Compile Include="utils.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="PyTorch" />
+    <Folder Include="Tensorflow" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="CondaEnv|CondaEnv|tensorflow1" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>

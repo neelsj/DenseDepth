@@ -58,7 +58,7 @@ pathlib.Path(runPath).mkdir(parents=True, exist_ok=True)
 print('Output: ' + runPath)
 
  # (optional steps)
-if False:
+if True:
     # Keep a copy of this training script and calling arguments
     with open(__file__, 'r') as training_script: training_script_content = training_script.read()
     training_script_content = '#' + str(sys.argv) + '\n' + training_script_content
@@ -87,9 +87,7 @@ model.compile(loss=depth_loss_function, optimizer=optimizer)
 print('Ready for training!\n')
 
 # Callbacks
-callbacks = []
-if args.data == 'nyu': callbacks = get_nyu_callbacks(model, basemodel, train_generator, test_generator, load_test_data() if args.full else None , runPath)
-if args.data == 'unreal': callbacks = get_nyu_callbacks(model, basemodel, train_generator, test_generator, load_test_data() if args.full else None , runPath)
+callbacks = get_nyu_callbacks(model, basemodel, train_generator, test_generator, load_test_data() if args.full else None , runPath)
 
 # Start training
 model.fit_generator(train_generator, callbacks=callbacks, validation_data=test_generator, epochs=args.epochs, shuffle=True)

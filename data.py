@@ -38,11 +38,11 @@ def get_nyu_train_test_data(batch_size, datadir='./', ):
 
     return train_generator, test_generator
 
-def get_r4dl_data(batch_size, datadir='./', nyu_data_zipfile='nyu_data.zip', r4dl_data_zipfile='R4DL_data_100.zip'):
+def get_r4dl_data(batch_size, datadir='./', nyu_data_zipfile='nyu_data.zip', r4dl_data_zipfile='R4DL_data_100.zip', r4dl_data_csv_file='R4DL_data_100/R4DL_train.csv'):
     nyu_data = extract_zip(datadir + nyu_data_zipfile)
     r4dl_data = extract_zip(datadir + r4dl_data_zipfile)
 
-    r4dl_train = list((row.split(',') for row in (r4dl_data['R4DL_data_100/R4DL_train.csv']).decode("utf-8").split('\n') if len(row) > 0))
+    r4dl_train = list((row.split(',') for row in (r4dl_data[r4dl_data_csv_file]).decode("utf-8").split('\n') if len(row) > 0))
     nyu2_test = list((row.split(',') for row in (nyu_data['data/nyu2_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
 
     shape_rgb = (batch_size, 480, 640, 3)
@@ -55,8 +55,8 @@ def get_r4dl_data(batch_size, datadir='./', nyu_data_zipfile='nyu_data.zip', r4d
 
     return nyu_data, r4dl_data, r4dl_train, nyu2_test, shape_rgb, shape_depth
 
-def get_r4dl_train_test_data(batch_size, datadir='./'):
-    nyu_data, r4dl_data, r4dl_train, nyu2_test, shape_rgb, shape_depth = get_r4dl_data(batch_size, datadir)
+def get_r4dl_train_test_data(batch_size, datadir='./', r4dl_data_zipfile='R4DL_data_100.zip', r4dl_data_csv_file='R4DL_data_100/R4DL_train.csv'):
+    nyu_data, r4dl_data, r4dl_train, nyu2_test, shape_rgb, shape_depth = get_r4dl_data(batch_size, datadir, r4dl_data_zipfile=r4dl_data_zipfile, r4dl_data_csv_file=r4dl_data_csv_file)
 
     train_generator = NYU_BasicAugmentRGBSequence(r4dl_data, r4dl_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
     test_generator = NYU_BasicRGBSequence(nyu_data, nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)

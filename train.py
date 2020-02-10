@@ -12,6 +12,8 @@ from keras.optimizers import Adam
 from keras.utils import multi_gpu_model
 from keras.utils.vis_utils import plot_model
 
+import multiprocessing
+
 # Argument Parser
 parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estimation via Transfer Learning')
 parser.add_argument('--data', default='nyu', type=str, help='Training dataset.')
@@ -28,6 +30,8 @@ parser.add_argument('--checkpoint', type=str, default='', help='Start training f
 parser.add_argument('--full', dest='full', action='store_true', help='Full training with metrics, checkpoints, and image samples.')
 
 args = parser.parse_args()
+
+threads = min(max(args.bs,8), multiprocessing.cpu_count())
 
 if ('PT_DATA_DIR' in os.environ):
     data_dir = os.environ['PT_DATA_DIR'] + '/'
@@ -84,13 +88,13 @@ print('\n\n\n', 'Compiling model..', runID, '\n\n\tGPU ' + (str(args.gpus)+' gpu
         + '\t\tBatch size [ ' + str(args.bs) + ' ] ' + ' \n\n')
 model.compile(loss=depth_loss_function, optimizer=optimizer)
 
-print('Ready for training!\n')
+print('Ready for training using %d GPU and %d CPU threads!\n' % (args.gpus, threads))
 
 # Callbacks
 callbacks = get_nyu_callbacks(model, basemodel, train_generator, test_generator, load_test_data() if args.full else None , runPath)
 
 # Start training
-model.fit_generator(train_generator, callbacks=callbacks, validation_data=test_generator, epochs=args.epochs, shuffle=True)
+model.fit_generator(train_generator, callbacks=callbacks, validation_data=test_generator, epochs=args.epochs, shuffle=True, workers=threads)
 
 # Save the final trained model:
 basemodel.save(runPath + '/model.h5')

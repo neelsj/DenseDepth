@@ -12,7 +12,7 @@
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>CondaEnv|CondaEnv|tensorflow1</InterpreterId>
-    <CommandLineArguments>--data r4dl --gpus 1 --bs 4 --datadir ../data/ --full --checkpoint models/1581201492-n25-e20-bs4-lr0.0001-densedepth_nyu/model.h5 --epochs 1</CommandLineArguments>
+    <CommandLineArguments>--data r4dl --gpus 1 --bs 4 --datadir ../data/ --epochs 2</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <Name>R4DL</Name>
   </PropertyGroup>

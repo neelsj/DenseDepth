@@ -93,7 +93,7 @@ model.compile(loss=depth_loss_function, optimizer=optimizer)
 print('Ready for training using %d GPU and %d CPU threads!\n' % (args.gpus, threads))
 
 # Callbacks
-callbacks = get_nyu_callbacks(model, basemodel, train_generator, test_generator, load_test_data() if args.full else None , runPath)
+callbacks = get_nyu_callbacks(model, basemodel, train_generator, test_generator, load_test_data(data_dir) if args.full else None , runPath)
 
 # Start training
 model.fit_generator(train_generator, callbacks=callbacks, validation_data=test_generator, epochs=args.epochs, shuffle=True, workers=threads)

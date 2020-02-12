@@ -6,6 +6,8 @@ from zipfile import ZipFile
 from keras.utils import Sequence
 from augment import BasicPolicy
 
+from scipy.interpolate import griddata
+
 def extract_zip(input_zip):
     input_zip=ZipFile(input_zip)
     return {name: input_zip.read(name) for name in input_zip.namelist()}
@@ -96,7 +98,16 @@ class NYU_BasicAugmentRGBSequence(Sequence):
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
             batch_x[i] = nyu_resize(x, 480)
-            batch_y[i] = nyu_resize(y, 240)
+            y = nyu_resize(y, 240)
+
+            ind = y==0
+
+            if (ind.any()):
+                nind = y!=0
+                xx, yy = np.meshgrid(range(320),range(240))
+                y[ind] = griddata((xx[nind], yy[nind]), y[nind], (xx[ind], yy[ind]), method='nearest')
+
+            batch_y[i] = y.reshape(240,320,1)
 
             if is_apply_policy: batch_x[i], batch_y[i] = self.policy(batch_x[i], batch_y[i])
 

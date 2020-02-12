@@ -8,14 +8,19 @@ from loss import depth_loss_function
 
 def create_model(existing='', is_twohundred=False, is_halffeatures=False):
         
-    if len(existing) == 0:
+    if (len(existing) == 0 or 'densenet' in existing):
         print('Loading base model (DenseNet)..')
+
+        if ('densenet' in existing):
+            weights = existing
+        else:
+            weights = 'imagenet'
 
         # Encoder Layers
         if is_twohundred:
-            base_model = applications.DenseNet201(input_shape=(None, None, 3), include_top=False)
+            base_model = applications.DenseNet201(input_shape=(None, None, 3), include_top=False, weights=weights)
         else:
-            base_model = applications.DenseNet169(input_shape=(None, None, 3), include_top=False)
+            base_model = applications.DenseNet169(input_shape=(None, None, 3), include_top=False, weights=weights)
 
         print('Base model loaded.')
 

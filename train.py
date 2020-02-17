@@ -87,7 +87,7 @@ def main(args):
     # Data loaders
     if args.data == 'nyu': train_generator, test_generator = get_nyu_train_test_data( args.bs,  args.datadir)
     if args.data == 'unreal': train_generator, test_generator = get_unreal_train_test_data( args.bs, args.datadir )
-    if args.data == 'r4dl': train_generator, test_generator = get_r4dl_train_test_data( args.bs, args.datadir, r4dl_data_zipfile=args.datazip, r4dl_data_csv_file=args.datacsv)
+    if args.data == 'r4dl': train_generator, test_generator = get_r4dl_train_test_data( args.bs, args.datadir, r4dl_data_csv_file=args.datacsv)
 
     # Training session details
     runID = str(int(time.time())) + '-n' + str(len(train_generator)) + '-e' + str(args.epochs) + '-bs' + str(args.bs) + '-lr' + str(args.lr) + '-' + args.name

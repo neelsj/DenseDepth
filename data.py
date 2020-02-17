@@ -5,20 +5,22 @@ from PIL import Image
 from zipfile import ZipFile
 from keras.utils import Sequence
 from augment import BasicPolicy
+import os
 
 def extract_zip(input_zip):
     input_zip=ZipFile(input_zip)
+    # maps the name of the file to the bytes of the image
     return {name: input_zip.read(name) for name in input_zip.namelist()}
 
 def nyu_resize(img, resolution=480, padding=6):
     from skimage.transform import resize
     return resize(img, (resolution, int(resolution*4/3)), preserve_range=True, mode='reflect', anti_aliasing=True )
 
-def get_nyu_data(batch_size, datadir='./', nyu_data_zipfile='nyu_data.zip'):
-    data = extract_zip(datadir + nyu_data_zipfile)
-
-    nyu2_train = list((row.split(',') for row in (data['data/nyu2_train.csv']).decode("utf-8").split('\n') if len(row) > 0))
-    nyu2_test = list((row.split(',') for row in (data['data/nyu2_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
+def get_nyu_data(batch_size, nyu_data_train_csv='data/nyu2_train.csv', nyu_data_test_csv='data/nyu2_test.csv'):
+    with open(nyu_data_train_csv, encoding="utf-8", newline="\n") as train_csv:
+        nyu2_train = list((row.strip("\n").split(',') for row in (train_csv) if len(row) > 0))
+    with open(nyu_data_test_csv, encoding="utf-8", newline="\n") as test_csv:
+        nyu2_test = list((row.strip("\n").split(',') for row in (test_csv) if len(row) > 0))
 
     shape_rgb = (batch_size, 480, 640, 3)
     shape_depth = (batch_size, 240, 320, 1)
@@ -28,22 +30,24 @@ def get_nyu_data(batch_size, datadir='./', nyu_data_zipfile='nyu_data.zip'):
         nyu2_train = nyu2_train[:10]
         nyu2_test = nyu2_test[:10]
 
-    return data, nyu2_train, nyu2_test, shape_rgb, shape_depth
+    return nyu2_train, nyu2_test, shape_rgb, shape_depth
 
-def get_nyu_train_test_data(batch_size, datadir='./', ):
-    data, nyu2_train, nyu2_test, shape_rgb, shape_depth = get_nyu_data(batch_size, datadir)
+def get_nyu_train_test_data(batch_size, datadir='./', nyu_data_train_csv='data/nyu2_train.csv', nyu_data_test_csv='data/nyu2_test.csv'):
+    nyu_train_csv = os.path.join(datadir, nyu_data_train_csv)
+    nyu_test_csv = os.path.join(datadir, nyu_data_test_csv)
 
-    train_generator = NYU_BasicAugmentRGBSequence(data, nyu2_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
-    test_generator = NYU_BasicRGBSequence(data, nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
+    nyu2_train, nyu2_test, shape_rgb, shape_depth = get_nyu_data(batch_size, nyu_data_train_csv=nyu_train_csv, nyu_data_test_csv=nyu_test_csv)
+
+    train_generator = NYU_BasicAugmentRGBSequence(nyu2_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
+    test_generator = NYU_BasicRGBSequence(nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
 
     return train_generator, test_generator
 
-def get_r4dl_data(batch_size, datadir='./', nyu_data_zipfile='nyu_data.zip', r4dl_data_zipfile='R4DL_data_100.zip', r4dl_data_csv_file='R4DL_data_100/R4DL_train.csv'):
-    nyu_data = extract_zip(datadir + nyu_data_zipfile)
-    r4dl_data = extract_zip(datadir + r4dl_data_zipfile)
-
-    r4dl_train = list((row.split(',') for row in (r4dl_data[r4dl_data_csv_file]).decode("utf-8").split('\n') if len(row) > 0))
-    nyu2_test = list((row.split(',') for row in (nyu_data['data/nyu2_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
+def get_r4dl_data(batch_size, r4dl_data_train_csv='R4DL_data_100/R4DL_train.csv', nyu_data_test_csv='data/nyu2_test.csv'):
+    with open(r4dl_data_train_csv, encoding="utf-8", newline="\n") as train_csv:
+        r4dl_train = list((row.strip("\n").strip("\r").split(',') for row in (train_csv) if len(row) > 0))
+    with open(nyu_data_test_csv, encoding="utf-8", newline="\n") as test_csv:
+        nyu2_test = list((row.strip("\n").split(',') for row in (test_csv) if len(row) > 0))
 
     shape_rgb = (batch_size, 480, 640, 3)
     shape_depth = (batch_size, 240, 320, 1)
@@ -53,19 +57,21 @@ def get_r4dl_data(batch_size, datadir='./', nyu_data_zipfile='nyu_data.zip', r4d
         r4dl_train = r4dl_train[:10]
         nyu2_test = nyu2_test[:10]
 
-    return nyu_data, r4dl_data, r4dl_train, nyu2_test, shape_rgb, shape_depth
+    return r4dl_train, nyu2_test, shape_rgb, shape_depth
 
-def get_r4dl_train_test_data(batch_size, datadir='./', r4dl_data_zipfile='R4DL_data_100.zip', r4dl_data_csv_file='R4DL_data_100/R4DL_train.csv'):
-    nyu_data, r4dl_data, r4dl_train, nyu2_test, shape_rgb, shape_depth = get_r4dl_data(batch_size, datadir, r4dl_data_zipfile=r4dl_data_zipfile, r4dl_data_csv_file=r4dl_data_csv_file)
+def get_r4dl_train_test_data(batch_size, datadir='./', r4dl_data_csv_file='R4DL_data_100/R4DL_train.csv', nyu_test_csv_file='data/nyu2_test.csv'):
+    r4dl_data_train_csv = os.path.join(datadir, r4dl_data_csv_file)
+    nyu_test_csv = os.path.join(datadir, nyu_test_csv_file)
 
-    train_generator = NYU_BasicAugmentRGBSequence(r4dl_data, r4dl_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
-    test_generator = NYU_BasicRGBSequence(nyu_data, nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
+    r4dl_train, nyu2_test, shape_rgb, shape_depth = get_r4dl_data(batch_size, r4dl_data_train_csv=r4dl_data_train_csv, nyu_data_test_csv=nyu_test_csv)
+
+    train_generator = NYU_BasicAugmentRGBSequence(r4dl_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
+    test_generator = NYU_BasicRGBSequence(nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
 
     return train_generator, test_generator
 
 class NYU_BasicAugmentRGBSequence(Sequence):
-    def __init__(self, data, dataset, batch_size, shape_rgb, shape_depth, is_flip=False, is_addnoise=False, is_erase=False):
-        self.data = data
+    def __init__(self, dataset, batch_size, shape_rgb, shape_depth, is_flip=False, is_addnoise=False, is_erase=False):
         self.dataset = dataset
         self.policy = BasicPolicy( color_change_ratio=0.50, mirror_ratio=0.50, flip_ratio=0.0 if not is_flip else 0.2, 
                                     add_noise_peak=0 if not is_addnoise else 20, erase_ratio=-1.0 if not is_erase else 0.5)
@@ -89,10 +95,13 @@ class NYU_BasicAugmentRGBSequence(Sequence):
         for i in range(batch_x.shape[0]):
             index = min((idx * self.batch_size) + i, self.N-1)
 
+            # get path of the rgb and ground truth image
             sample = self.dataset[index]
+            rgb_path = sample[0]
+            gt_path = sample[1]
 
-            x = np.clip(np.asarray(Image.open( BytesIO(self.data[sample[0]]) )).reshape(480,640,3)/255,0,1)
-            y = np.clip(np.asarray(Image.open( BytesIO(self.data[sample[1]]) )).reshape(480,640,1)/255*self.maxDepth,1,self.maxDepth)
+            x = np.clip(np.asarray(Image.open( rgb_path)).reshape(480,640,3)/255,0,1)
+            y = np.clip(np.asarray(Image.open( gt_path)).reshape(480,640,1)/255*self.maxDepth,1,self.maxDepth)
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
             batch_x[i] = nyu_resize(x, 480)
@@ -107,8 +116,7 @@ class NYU_BasicAugmentRGBSequence(Sequence):
         return batch_x, batch_y
 
 class NYU_BasicRGBSequence(Sequence):
-    def __init__(self, data, dataset, batch_size,shape_rgb, shape_depth):
-        self.data = data
+    def __init__(self, dataset, batch_size,shape_rgb, shape_depth):
         self.dataset = dataset
         self.batch_size = batch_size
         self.N = len(self.dataset)
@@ -125,9 +133,11 @@ class NYU_BasicRGBSequence(Sequence):
             index = min((idx * self.batch_size) + i, self.N-1)
 
             sample = self.dataset[index]
+            rgb_path = sample[0]
+            gt_path = sample[1]
 
-            x = np.clip(np.asarray(Image.open( BytesIO(self.data[sample[0]]))).reshape(480,640,3)/255,0,1)
-            y = np.asarray(Image.open(BytesIO(self.data[sample[1]])), dtype=np.float32).reshape(480,640,1).copy().astype(float) / 10.0
+            x = np.clip(np.asarray(Image.open( rgb_path)).reshape(480,640,3)/255,0,1)
+            y = np.asarray(Image.open(gt_path), dtype=np.float32).reshape(480,640,1).copy().astype(float) / 10.0
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
             batch_x[i] = nyu_resize(x, 480)

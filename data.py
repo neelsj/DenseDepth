@@ -77,7 +77,7 @@ def get_r4dl_train_test_data(batch_size, datadir='./', r4dl_data_csv_file='R4DL_
         r4dl_train[i][0] = os.path.join(datadir, r4dl_train[i][0])
         r4dl_train[i][1] = os.path.join(datadir, r4dl_train[i][1])
 
-    for i in range(len(nyu_test_csv)):
+    for i in range(len(nyu2_test)):
         nyu2_test[i][0] = os.path.join(datadir, nyu2_test[i][0])
         nyu2_test[i][1] = os.path.join(datadir, nyu2_test[i][1])
 

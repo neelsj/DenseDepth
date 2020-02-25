@@ -33,41 +33,31 @@ parser.add_argument('--name', type=str, default='densedepth_nyu', help='A name t
 parser.add_argument('--checkpoint', type=str, default='', help='Start training from an existing model.')
 parser.add_argument('--full', dest='full', action='store_true', help='Full training with metrics, checkpoints, and image samples.')
 
-def hollFillDepthImages(args, r4dl_data_csv_file='r4dl_path_256_data/R4DL_train.csv'):
+def hollFillDepthImages(args, r4dl_data_csv_file='r4dl_path_256_data/R4DL_train.csv', r4dl_data_csv_outfile='r4dl_path_256_data/R4DL_train_proc.csv'):
 
-    with open(args.datadir + r4dl_data_csv_file) as data_file:
-        image_data = csv.reader(data_file)
+    with open(args.datadir + r4dl_data_csv_file) as dataFile, open(args.datadir + r4dl_data_csv_outfile, 'w', newline='') as dataFileOut:
+        image_data = csv.reader(dataFile)
+        writer = csv.writer(dataFileOut, delimiter=',')
 
-        depth_files = []
         for row in image_data:
-            depth_files.append(row[1])
 
-        depth_files = sorted(set(depth_files))
-
-        for row in depth_files:
-
-            y = np.asarray(Image.open(args.datadir + row)).copy()
+            y = np.asarray(Image.open(args.datadir + row[1])).copy()
 
             ind = y==0
+            nind = y!=0
 
-            if (ind.any()):
+            if (nind.any()): # if any valid pixels
+                if (ind.any()): #fill is any invalid pixels
+                
+                    print(row[1])
 
-                print(row)
+                    xx, yy = np.meshgrid(range(y.shape[1]),range(y.shape[0]))
+                    y[ind] = griddata((xx[nind], yy[nind]), y[nind], (xx[ind], yy[ind]), method='nearest')
 
-                #y2 = y.copy()
-                #y2[ind] = 255
-                #y2 = np.concatenate((np.expand_dims(y,2),np.expand_dims(y2,2),np.expand_dims(y,2)),2)
+                    Image.fromarray(y).save(args.datadir + row[1])
 
-                #cv2.imshow("in", y2)
-
-                nind = y!=0
-                xx, yy = np.meshgrid(range(y.shape[1]),range(y.shape[0]))
-                y[ind] = griddata((xx[nind], yy[nind]), y[nind], (xx[ind], yy[ind]), method='nearest')
-
-                #cv2.imshow("out", y)
-                #cv2.waitKey(0)
-
-                Image.fromarray(y).save(args.datadir + row)
+                writer.writerow(row)
+                dataFileOut.flush()
 
 def main(args):
 
@@ -144,5 +134,6 @@ if __name__ == '__main__':
         args.datadir = os.environ['PT_DATA_DIR'] + '/'
 
     main(args)
+    #hollFillDepthImages(args, 'fixed_path_256_16_jitters_training_data/R4DL_train.csv', 'fixed_path_256_16_jitters_training_data/R4DL_train_proc.csv')
     
 

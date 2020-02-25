@@ -38,6 +38,14 @@ def get_nyu_train_test_data(batch_size, datadir='./', nyu_data_train_csv='data/n
 
     nyu2_train, nyu2_test, shape_rgb, shape_depth = get_nyu_data(batch_size, nyu_data_train_csv=nyu_train_csv, nyu_data_test_csv=nyu_test_csv)
 
+    for i in range(len(nyu2_train)):
+        nyu2_train[i][0] = os.path.join(datadir, nyu2_train[i][0])
+        nyu2_train[i][1] = os.path.join(datadir, nyu2_train[i][1])
+
+    for i in range(len(nyu_test_csv)):
+        nyu2_test[i][0] = os.path.join(datadir, nyu2_test[i][0])
+        nyu2_test[i][1] = os.path.join(datadir, nyu2_test[i][1])
+
     train_generator = NYU_BasicAugmentRGBSequence(nyu2_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
     test_generator = NYU_BasicRGBSequence(nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
 
@@ -64,6 +72,14 @@ def get_r4dl_train_test_data(batch_size, datadir='./', r4dl_data_csv_file='R4DL_
     nyu_test_csv = os.path.join(datadir, nyu_test_csv_file)
 
     r4dl_train, nyu2_test, shape_rgb, shape_depth = get_r4dl_data(batch_size, r4dl_data_train_csv=r4dl_data_train_csv, nyu_data_test_csv=nyu_test_csv)
+
+    for i in range(len(r4dl_train)):
+        r4dl_train[i][0] = os.path.join(datadir, r4dl_train[i][0])
+        r4dl_train[i][1] = os.path.join(datadir, r4dl_train[i][1])
+
+    for i in range(len(nyu_test_csv)):
+        nyu2_test[i][0] = os.path.join(datadir, nyu2_test[i][0])
+        nyu2_test[i][1] = os.path.join(datadir, nyu2_test[i][1])
 
     train_generator = NYU_BasicAugmentRGBSequence(r4dl_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
     test_generator = NYU_BasicRGBSequence(nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)

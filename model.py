@@ -61,7 +61,7 @@ def create_model(existing='', is_twohundred=False, is_halffeatures=False):
         model = Model(inputs=base_model.input, outputs=conv3)
     else:
         # Load model from file
-        if not existing.endswith('.h5'):
+        if (not existing.endswith('.h5') and not existing.endswith('.hdf5')):
             sys.exit('Please provide a correct model file when using [existing] argument.')
         custom_objects = {'BilinearUpSampling2D': BilinearUpSampling2D, 'depth_loss_function': depth_loss_function}
         model = load_model(existing, custom_objects=custom_objects)

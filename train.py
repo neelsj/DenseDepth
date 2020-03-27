@@ -16,10 +16,13 @@ from keras.utils.vis_utils import plot_model
 
 import multiprocessing
 
+import keras
+import tensorflow as tf
+
 # Argument Parser
 parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estimation via Transfer Learning')
 parser.add_argument('--data', default='nyu', type=str, help='Training dataset.')
-parser.add_argument('--datadir', default='./', type=str, help='Dataset directory.')
+parser.add_argument('--datadir', default='E:/Source/R4DL/data/', type=str, help='Dataset directory.')
 parser.add_argument('--datazip', default='', type=str, help='Dataset zip file.')
 parser.add_argument('--datacsv', default='', type=str, help='Dataset csv file.')
 parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
@@ -32,6 +35,7 @@ parser.add_argument('--maxdepth', type=float, default=1000.0, help='Maximum of i
 parser.add_argument('--name', type=str, default='densedepth_nyu', help='A name to attach to the training session')
 parser.add_argument('--checkpoint', type=str, default='', help='Start training from an existing model.')
 parser.add_argument('--full', dest='full', action='store_true', help='Full training with metrics, checkpoints, and image samples.')
+parser.add_argument('--border', type=int, default=8, help='Image border')
 
 def hollFillDepthImages(args, r4dl_data_csv_file='r4dl_path_256_data/R4DL_train.csv', r4dl_data_csv_outfile='r4dl_path_256_data/R4DL_train_proc.csv'):
 
@@ -41,25 +45,41 @@ def hollFillDepthImages(args, r4dl_data_csv_file='r4dl_path_256_data/R4DL_train.
 
         for row in image_data:
 
-            y = np.asarray(Image.open(args.datadir + row[1])).copy()
+            depth = np.asarray(Image.open(args.datadir + row[1])).copy()
 
-            ind = y==0
-            nind = y!=0
+            ind = depth==0
+            nind = depth!=0
 
-            if (nind.any()): # if any valid pixels
-                if (ind.any()): #fill is any invalid pixels
+            if (not nind.any() or np.mean(depth) < 1):
+                print(row[1] + ' all zero!')
+                continue
+
+            rgb = np.asarray(Image.open(args.datadir + row[0])).copy()
+
+            rgbind = rgb==0
+            rgbnind = rgb!=0
+
+            if (not rgbnind.any() or np.mean(rgb) < 1):
+                print(row[0] + ' all zero!')
+                continue
+
+            if (ind.any()): #fill is any invalid pixels
                 
-                    print(row[1])
+                print(row[1])
 
-                    xx, yy = np.meshgrid(range(y.shape[1]),range(y.shape[0]))
-                    y[ind] = griddata((xx[nind], yy[nind]), y[nind], (xx[ind], yy[ind]), method='nearest')
+                xx, yy = np.meshgrid(range(depth.shape[1]),range(depth.shape[0]))
+                depth[ind] = griddata((xx[nind], yy[nind]), depth[nind], (xx[ind], yy[ind]), method='nearest')
 
-                    Image.fromarray(y).save(args.datadir + row[1])
+                Image.fromarray(depth).save(args.datadir + row[1])
 
-                writer.writerow(row)
-                dataFileOut.flush()
+            writer.writerow(row)
+            dataFileOut.flush()
 
 def main(args):
+
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    keras.backend.set_session(tf.Session(config=config))
 
     threads = min(max(args.bs,8), multiprocessing.cpu_count())
 
@@ -75,7 +95,7 @@ def main(args):
     model = create_model(existing = model_file)
 
     # Data loaders
-    if args.data == 'nyu': train_generator, test_generator = get_nyu_train_test_data( args.bs,  args.datadir)
+    if args.data == 'nyu': train_generator, test_generator = get_nyu_train_test_data( args.bs,  args.datadir, nyu_data_train_csv=args.datacsv)
     if args.data == 'unreal': train_generator, test_generator = get_unreal_train_test_data( args.bs, args.datadir )
     if args.data == 'r4dl': train_generator, test_generator = get_r4dl_train_test_data( args.bs, args.datadir, r4dl_data_csv_file=args.datacsv)
 
@@ -134,6 +154,6 @@ if __name__ == '__main__':
         args.datadir = os.environ['PT_DATA_DIR'] + '/'
 
     main(args)
-    #hollFillDepthImages(args, 'fixed_path_256_16_jitters_training_data/R4DL_train.csv', 'fixed_path_256_16_jitters_training_data/R4DL_train_proc.csv')
+    #hollFillDepthImages(args, 'fixed_path_256_16_jitters_training_data/R4DL_train.csv', 'fixed_path_256_16_jitters_training_data/R4DL_train_proc2.csv')
     
 

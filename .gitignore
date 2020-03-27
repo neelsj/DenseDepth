@@ -6,3 +6,6 @@
 *.jpg
 *.obj
 /.vs/R4DL/v15
+/PyTorch/__pycache__
+/runs
+*.npy

@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.utils as utils
 import torchvision.utils as vutils    
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 
 from model import Model
 from loss import ssim
@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--epochs', default=20, type=int, help='number of total epochs to run')
     parser.add_argument('--lr', '--learning-rate', default=0.0001, type=float, help='initial learning rate')
     parser.add_argument('--bs', default=4, type=int, help='batch size')
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     # Create model
     model = Model().cuda()

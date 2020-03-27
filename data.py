@@ -6,6 +6,8 @@ from zipfile import ZipFile
 from keras.utils import Sequence
 from augment import BasicPolicy
 import os
+import random
+import csv
 
 def extract_zip(input_zip):
     input_zip=ZipFile(input_zip)
@@ -42,7 +44,7 @@ def get_nyu_train_test_data(batch_size, datadir='./', nyu_data_train_csv='data/n
         nyu2_train[i][0] = os.path.join(datadir, nyu2_train[i][0])
         nyu2_train[i][1] = os.path.join(datadir, nyu2_train[i][1])
 
-    for i in range(len(nyu_test_csv)):
+    for i in range(len(nyu2_test)):
         nyu2_test[i][0] = os.path.join(datadir, nyu2_test[i][0])
         nyu2_test[i][1] = os.path.join(datadir, nyu2_test[i][1])
 
@@ -86,6 +88,21 @@ def get_r4dl_train_test_data(batch_size, datadir='./', r4dl_data_csv_file='R4DL_
 
     return train_generator, test_generator
 
+def createBorder(x, width, color):
+
+    if (len(x.shape) == 3):
+        x[0:width,:,:] = color
+        x[:,0:width,:] = color
+        x[-width:-1,:,:] = color
+        x[:,-width:-1,:] = color
+    else:
+        x[0:width,:] = color
+        x[:,0:width] = color
+        x[-width:-1,:] = color
+        x[:,-width:-1] = color
+
+    return x
+
 class NYU_BasicAugmentRGBSequence(Sequence):
     def __init__(self, dataset, batch_size, shape_rgb, shape_depth, is_flip=False, is_addnoise=False, is_erase=False):
         self.dataset = dataset
@@ -113,11 +130,18 @@ class NYU_BasicAugmentRGBSequence(Sequence):
 
             # get path of the rgb and ground truth image
             sample = self.dataset[index]
-            rgb_path = sample[0]
-            gt_path = sample[1]
+            rgb_path = sample[0].strip()
+            gt_path = sample[1].strip()
 
-            x = np.clip(np.asarray(Image.open( rgb_path)).reshape(480,640,3)/255,0,1)
-            y = np.clip(np.asarray(Image.open( gt_path)).reshape(480,640,1)/255*self.maxDepth,1,self.maxDepth)
+            x = np.array(Image.open( rgb_path)).reshape(480,640,3)
+            y = np.array(Image.open( gt_path)).reshape(480,640,1)
+
+            x = createBorder(x, 8, 255)
+            y = createBorder(y, 8, 64)
+
+            x = np.clip(x/255,0,1)
+            y = np.clip(y/255*self.maxDepth,1,self.maxDepth)
+
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
             batch_x[i] = nyu_resize(x, 480)

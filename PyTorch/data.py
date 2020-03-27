@@ -47,11 +47,12 @@ class RandomChannelSwap(object):
 
 def loadZipToMem(zip_file):
     # Load zip file into memory
-    print('Loading dataset zip file...', end='')
+    print('Loading dataset zip file...')
     from zipfile import ZipFile
     input_zip = ZipFile(zip_file)
     data = {name: input_zip.read(name) for name in input_zip.namelist()}
     nyu2_train = list((row.split(',') for row in (data['data/nyu2_train.csv']).decode("utf-8").split('\n') if len(row) > 0))
+    nyu2_test = list((row.split(',') for row in (data['data/nyu2_test.csv']).decode("utf-8").split('\n') if len(row) > 0))
 
     from sklearn.utils import shuffle
     nyu2_train = shuffle(nyu2_train, random_state=0)
@@ -59,7 +60,8 @@ def loadZipToMem(zip_file):
     #if True: nyu2_train = nyu2_train[:40]
 
     print('Loaded ({0}).'.format(len(nyu2_train)))
-    return data, nyu2_train
+    print('Loaded ({0}).'.format(len(nyu2_test)))
+    return data, nyu2_train, nyu2_test
 
 class depthDatasetMemory(Dataset):
     def __init__(self, data, nyu2_train, transform=None):
@@ -144,9 +146,9 @@ def getDefaultTrainTransform():
     ])
 
 def getTrainingTestingData(batch_size):
-    data, nyu2_train = loadZipToMem('nyu_data.zip')
+    data, nyu2_train, nyu2_test = loadZipToMem('../data/nyu_data.zip')
 
     transformed_training = depthDatasetMemory(data, nyu2_train, transform=getDefaultTrainTransform())
-    transformed_testing = depthDatasetMemory(data, nyu2_train, transform=getNoTransform())
+    transformed_testing = depthDatasetMemory(data, nyu2_test, transform=getNoTransform())
 
     return DataLoader(transformed_training, batch_size, shuffle=True), DataLoader(transformed_testing, batch_size, shuffle=False)

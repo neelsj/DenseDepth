@@ -38,6 +38,7 @@ if __name__ == '__main__':
 
     test_data = tqdm(test_data)
 
+    # target historgram for computing kl divergence
     #target_hist = None
     target_hist = np.load('../data/data/nyu2_test_total_hist.npy')
 
@@ -52,6 +53,7 @@ if __name__ == '__main__':
 
     for sample in test_data:
 
+        # open rgb and depth images
         rgb_path = '../data/' + sample[0].rstrip()
         gt_path = '../data/' + sample[1].rstrip()
         
@@ -60,6 +62,7 @@ if __name__ == '__main__':
             
         depth = depth*depthScale
 
+        # compute and store stats
         vmin = min(np.min(depth), vmin)
         vmax = max(np.max(depth), vmax)
 
@@ -78,7 +81,7 @@ if __name__ == '__main__':
 
         stats.append(row)
 
-        # add intro aggregate historgram
+        # add into aggregate historgram
         if (total_hist is None):
             total_hist = hist
         else:
@@ -89,9 +92,11 @@ if __name__ == '__main__':
             plt.show(block=False)
             plt.pause(.001)            
 
+    # normalize
     total_hist /= np.sum(total_hist)            
     avg_ent /= len(test_data)
 
+    # printe, plot, and save
     if (target_hist is not None):
         total_kld = kl_divergence(np.clip(total_hist,1e-10, 1), np.clip(target_hist,1e-10, 1))
 

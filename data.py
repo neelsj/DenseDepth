@@ -8,6 +8,8 @@ from augment import BasicPolicy
 import os
 import random
 import csv
+import matplotlib.pyplot as plt
+import cv2
 
 def extract_zip(input_zip):
     input_zip=ZipFile(input_zip)
@@ -18,73 +20,41 @@ def nyu_resize(img, resolution=480, padding=6):
     from skimage.transform import resize
     return resize(img, (resolution, int(resolution*4/3)), preserve_range=True, mode='reflect', anti_aliasing=True )
 
-def get_nyu_data(batch_size, nyu_data_train_csv='data/nyu2_train.csv', nyu_data_test_csv='data/nyu2_test.csv'):
-    with open(nyu_data_train_csv, encoding="utf-8", newline="\n") as train_csv:
-        nyu2_train = list((row.strip("\n").split(',') for row in (train_csv) if len(row) > 0))
-    with open(nyu_data_test_csv, encoding="utf-8", newline="\n") as test_csv:
-        nyu2_test = list((row.strip("\n").split(',') for row in (test_csv) if len(row) > 0))
+def get_data(batch_size, data_train_csv, test_csv_file):
+    with open(data_train_csv, encoding="utf-8", newline="\n") as train_csv:
+        train = list((row.strip("\n").strip("\r").split(',') for row in (train_csv) if len(row) > 0))
+    with open(test_csv_file, encoding="utf-8", newline="\n") as test_csv:
+        test = list((row.strip("\n").split(',') for row in (test_csv) if len(row) > 0))
 
     shape_rgb = (batch_size, 480, 640, 3)
     shape_depth = (batch_size, 240, 320, 1)
 
     # Helpful for testing...
     if False:
-        nyu2_train = nyu2_train[:10]
-        nyu2_test = nyu2_test[:10]
+        train = train[:10]
+        test = test[:10]
 
-    return nyu2_train, nyu2_test, shape_rgb, shape_depth
+    return train, test, shape_rgb, shape_depth
 
-def get_nyu_train_test_data(batch_size, datadir='./', nyu_data_train_csv='data/nyu2_train.csv', nyu_data_test_csv='data/nyu2_test.csv'):
-    nyu_train_csv = os.path.join(datadir, nyu_data_train_csv)
-    nyu_test_csv = os.path.join(datadir, nyu_data_test_csv)
+def get_train_test_data(batch_size, datadir='./', data_csv_file='data/nyu2_train.csv', test_csv_file='data/nyu2_test.csv', sigmaRGB=0, sigmaD=0, depthScale=1):
+    data_train_csv = os.path.join(datadir, data_csv_file)
+    test_csv_file = os.path.join(datadir, test_csv_file)
 
-    nyu2_train, nyu2_test, shape_rgb, shape_depth = get_nyu_data(batch_size, nyu_data_train_csv=nyu_train_csv, nyu_data_test_csv=nyu_test_csv)
+    train, test, shape_rgb, shape_depth = get_data(batch_size, data_train_csv=data_train_csv, test_csv_file=test_csv_file)
 
-    for i in range(len(nyu2_train)):
-        nyu2_train[i][0] = os.path.join(datadir, nyu2_train[i][0])
-        nyu2_train[i][1] = os.path.join(datadir, nyu2_train[i][1])
+    for i in range(len(train)):
+        train[i][0] = os.path.join(datadir, train[i][0])
+        train[i][1] = os.path.join(datadir, train[i][1])
 
-    for i in range(len(nyu2_test)):
-        nyu2_test[i][0] = os.path.join(datadir, nyu2_test[i][0])
-        nyu2_test[i][1] = os.path.join(datadir, nyu2_test[i][1])
+    for i in range(len(test)):
+        test[i][0] = os.path.join(datadir, test[i][0])
+        test[i][1] = os.path.join(datadir, test[i][1])
 
-    train_generator = NYU_BasicAugmentRGBSequence(nyu2_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
-    test_generator = NYU_BasicRGBSequence(nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
+    train_generator = NYU_BasicAugmentRGBSequence(train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth, sigmaRGB=sigmaRGB, sigmaD=sigmaD)
+    test_generator = NYU_BasicRGBSequence(test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth, depthScale=depthScale)
 
-    return train_generator, test_generator
-
-def get_r4dl_data(batch_size, r4dl_data_train_csv='R4DL_data_100/R4DL_train.csv', nyu_data_test_csv='data/nyu2_test.csv'):
-    with open(r4dl_data_train_csv, encoding="utf-8", newline="\n") as train_csv:
-        r4dl_train = list((row.strip("\n").strip("\r").split(',') for row in (train_csv) if len(row) > 0))
-    with open(nyu_data_test_csv, encoding="utf-8", newline="\n") as test_csv:
-        nyu2_test = list((row.strip("\n").split(',') for row in (test_csv) if len(row) > 0))
-
-    shape_rgb = (batch_size, 480, 640, 3)
-    shape_depth = (batch_size, 240, 320, 1)
-
-    # Helpful for testing...
-    if False:
-        r4dl_train = r4dl_train[:10]
-        nyu2_test = nyu2_test[:10]
-
-    return r4dl_train, nyu2_test, shape_rgb, shape_depth
-
-def get_r4dl_train_test_data(batch_size, datadir='./', r4dl_data_csv_file='R4DL_data_100/R4DL_train.csv', nyu_test_csv_file='data/nyu2_test.csv'):
-    r4dl_data_train_csv = os.path.join(datadir, r4dl_data_csv_file)
-    nyu_test_csv = os.path.join(datadir, nyu_test_csv_file)
-
-    r4dl_train, nyu2_test, shape_rgb, shape_depth = get_r4dl_data(batch_size, r4dl_data_train_csv=r4dl_data_train_csv, nyu_data_test_csv=nyu_test_csv)
-
-    for i in range(len(r4dl_train)):
-        r4dl_train[i][0] = os.path.join(datadir, r4dl_train[i][0])
-        r4dl_train[i][1] = os.path.join(datadir, r4dl_train[i][1])
-
-    for i in range(len(nyu2_test)):
-        nyu2_test[i][0] = os.path.join(datadir, nyu2_test[i][0])
-        nyu2_test[i][1] = os.path.join(datadir, nyu2_test[i][1])
-
-    train_generator = NYU_BasicAugmentRGBSequence(r4dl_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
-    test_generator = NYU_BasicRGBSequence(nyu2_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
+    #train_generator.__getitem__(0, showImage=True)
+    test_generator.__getitem__(0)
 
     return train_generator, test_generator
 
@@ -130,7 +100,7 @@ def createBorder(x, width, color):
     return x
 
 class NYU_BasicAugmentRGBSequence(Sequence):
-    def __init__(self, dataset, batch_size, shape_rgb, shape_depth, is_flip=False, is_addnoise=False, is_erase=False):
+    def __init__(self, dataset, batch_size, shape_rgb, shape_depth, is_flip=False, is_addnoise=False, is_erase=False, sigmaRGB=0, sigmaD=0):
         self.dataset = dataset
         self.policy = BasicPolicy( color_change_ratio=0.50, mirror_ratio=0.50, flip_ratio=0.0 if not is_flip else 0.2, 
                                     add_noise_peak=0 if not is_addnoise else 20, erase_ratio=-1.0 if not is_erase else 0.5)
@@ -138,6 +108,8 @@ class NYU_BasicAugmentRGBSequence(Sequence):
         self.shape_rgb = shape_rgb
         self.shape_depth = shape_depth
         self.maxDepth = 1000.0
+        self.sigmaRGB = sigmaRGB
+        self.sigmaD = sigmaD
 
         from sklearn.utils import shuffle
         self.dataset = shuffle(self.dataset, random_state=0)
@@ -147,7 +119,7 @@ class NYU_BasicAugmentRGBSequence(Sequence):
     def __len__(self):
         return int(np.ceil(self.N / float(self.batch_size)))
 
-    def __getitem__(self, idx, is_apply_policy=True):
+    def __getitem__(self, idx, is_apply_policy=True, showImage=False):
         batch_x, batch_y = np.zeros( self.shape_rgb ), np.zeros( self.shape_depth )
 
         # Augmentation of RGB images
@@ -159,8 +131,28 @@ class NYU_BasicAugmentRGBSequence(Sequence):
             rgb_path = sample[0].strip()
             gt_path = sample[1].strip()
 
-            x = np.array(Image.open( rgb_path)).reshape(480,640,3)
-            y = np.array(Image.open( gt_path)).reshape(480,640,1)
+            x = np.array(Image.open(rgb_path)).reshape(480,640,3)
+            y = np.array(Image.open(gt_path)).reshape(480,640,1)
+
+            if (self.sigmaRGB > 0):
+                sz = int(np.ceil(6*np.ceil(self.sigmaRGB)) + 1)
+                x = cv2.GaussianBlur(x, (sz,sz), self.sigmaRGB)
+            if (self.sigmaD > 0):
+                sz = int(np.ceil(6*np.ceil(self.sigmaD)) + 1)
+                y = np.expand_dims(cv2.GaussianBlur(y, (sz,sz), self.sigmaD), 2)
+
+            if (showImage and i==0):
+                plt.subplot(1,2,1)
+                plt.imshow(x)    
+                plt.title(self.sigmaRGB)
+                plt.show(block=False)
+
+                plt.subplot(1,2,2)
+                plt.imshow(np.squeeze(y))    
+                plt.title(self.sigmaD)
+                plt.show(block=False)
+
+                plt.waitforbuttonpress()
 
             x = createBorder(x, 8, 255)
             y = createBorder(y, 8, 64)
@@ -182,13 +174,14 @@ class NYU_BasicAugmentRGBSequence(Sequence):
         return batch_x, batch_y
 
 class NYU_BasicRGBSequence(Sequence):
-    def __init__(self, dataset, batch_size,shape_rgb, shape_depth):
+    def __init__(self, dataset, batch_size,shape_rgb, shape_depth, depthScale=1):
         self.dataset = dataset
         self.batch_size = batch_size
         self.N = len(self.dataset)
         self.shape_rgb = shape_rgb
         self.shape_depth = shape_depth
         self.maxDepth = 1000.0
+        self.depthScale = depthScale
 
     def __len__(self):
         return int(np.ceil(self.N / float(self.batch_size)))
@@ -199,11 +192,15 @@ class NYU_BasicRGBSequence(Sequence):
             index = min((idx * self.batch_size) + i, self.N-1)
 
             sample = self.dataset[index]
-            rgb_path = sample[0]
-            gt_path = sample[1]
+            rgb_path = sample[0].strip()
+            gt_path = sample[1].strip()
 
             x = np.clip(np.asarray(Image.open( rgb_path)).reshape(480,640,3)/255,0,1)
             y = np.asarray(Image.open(gt_path), dtype=np.float32).reshape(480,640,1).copy().astype(float) / 10.0
+
+            vmin = np.min(y)
+            vmax = np.max(y)
+
             y = DepthNorm(y, maxDepth=self.maxDepth)
 
             batch_x[i] = nyu_resize(x, 480)
@@ -212,88 +209,5 @@ class NYU_BasicRGBSequence(Sequence):
             # DEBUG:
             #self.policy.debug_img(batch_x[i], np.clip(DepthNorm(batch_y[i])/maxDepth,0,1), idx, i)
         #exit()
-
-        return batch_x, batch_y
-
-#================
-# Unreal dataset
-#================
-
-import cv2
-from skimage.transform import resize
-
-def get_unreal_data(batch_size, datadir='./', unreal_data_file='unreal_data.h5'):
-    shape_rgb = (batch_size, 480, 640, 3)
-    shape_depth = (batch_size, 240, 320, 1)
-
-    # Open data file
-    import h5py
-    data = h5py.File(datadir + unreal_data_file, 'r')
-
-    # Shuffle
-    from sklearn.utils import shuffle
-    keys = shuffle(list(data['x'].keys()), random_state=0)
-
-    # Split some validation
-    unreal_train = keys[:len(keys)-100]
-    unreal_test = keys[len(keys)-100:]
-
-    # Helpful for testing...
-    if False:
-        unreal_train = unreal_train[:10]
-        unreal_test = unreal_test[:10]
-
-    return data, unreal_train, unreal_test, shape_rgb, shape_depth
-
-def get_unreal_train_test_data(batch_size, datadir='./'):
-    data, unreal_train, unreal_test, shape_rgb, shape_depth = get_unreal_data(batch_size, datadir)
-    
-    train_generator = Unreal_BasicAugmentRGBSequence(data, unreal_train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
-    test_generator = Unreal_BasicAugmentRGBSequence(data, unreal_test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth, is_skip_policy=True)
-
-    return train_generator, test_generator
-
-class Unreal_BasicAugmentRGBSequence(Sequence):
-    def __init__(self, data, dataset, batch_size, shape_rgb, shape_depth, is_flip=False, is_addnoise=False, is_erase=False, is_skip_policy=False):
-        self.data = data
-        self.dataset = dataset
-        self.policy = BasicPolicy( color_change_ratio=0.50, mirror_ratio=0.50, flip_ratio=0.0 if not is_flip else 0.2, 
-                                    add_noise_peak=0 if not is_addnoise else 20, erase_ratio=-1.0 if not is_erase else 0.5)
-        self.batch_size = batch_size
-        self.shape_rgb = shape_rgb
-        self.shape_depth = shape_depth
-        self.maxDepth = 1000.0
-        self.N = len(self.dataset)
-        self.is_skip_policy = is_skip_policy
-
-    def __len__(self):
-        return int(np.ceil(self.N / float(self.batch_size)))
-
-    def __getitem__(self, idx, is_apply_policy=True):
-        batch_x, batch_y = np.zeros( self.shape_rgb ), np.zeros( self.shape_depth )
-        
-        # Useful for validation
-        if self.is_skip_policy: is_apply_policy=False
-
-        # Augmentation of RGB images
-        for i in range(batch_x.shape[0]):
-            index = min((idx * self.batch_size) + i, self.N-1)
-
-            sample = self.dataset[index]
-            
-            rgb_sample = cv2.imdecode(np.asarray(self.data['x/{}'.format(sample)]), 1)
-            depth_sample = self.data['y/{}'.format(sample)] 
-            depth_sample = resize(depth_sample, (self.shape_depth[1], self.shape_depth[2]), preserve_range=True, mode='reflect', anti_aliasing=True )
-            
-            x = np.clip(rgb_sample/255, 0, 1)
-            y = np.clip(depth_sample, 10, self.maxDepth)
-            y = DepthNorm(y, maxDepth=self.maxDepth)
-
-            batch_x[i] = x
-            batch_y[i] = y
-
-            if is_apply_policy: batch_x[i], batch_y[i] = self.policy(batch_x[i], batch_y[i])
-                
-            #self.policy.debug_img(batch_x[i], np.clip(DepthNorm(batch_y[i],self.maxDepth)/self.maxDepth,0,1), index, i)
 
         return batch_x, batch_y

@@ -4,6 +4,7 @@ import time
 import argparse
 import numpy as np
 import h5py
+from tqdm import tqdm
 
 # Kerasa / TensorFlow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'

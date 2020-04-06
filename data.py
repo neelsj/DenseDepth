@@ -105,9 +105,9 @@ def get_evaluation_data(eval_csv, datadir="./"):
         rgb_path = sample[0].strip()
         gt_path = sample[1].strip()
 
-        x = np.clip(np.asarray(Image.open(rgb_path), dtype=np.uint8).reshape(480, 640, 3), 0, 255)
+        x = np.clip(np.asarray(Image.open(datadir + rgb_path), dtype=np.uint8).reshape(480, 640, 3), 0, 255)
 
-        y = np.asarray(Image.open(gt_path), dtype=np.float32).reshape(480, 640).copy().astype(float)/25.0
+        y = np.asarray(Image.open(datadir + gt_path), dtype=np.float32).reshape(480, 640).copy().astype(float)* (10.0/255.0)
 
         rgb[i] = x
         depth[i] = y

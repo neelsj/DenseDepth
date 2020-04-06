@@ -24,10 +24,10 @@ from model import create_model
 
 # Argument Parser
 parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estimation via Transfer Learning')
-#parser.add_argument('--model', default='../data/nyu.h5', type=str, help='Trained Keras model file.')
-parser.add_argument('--model', default='../data/models/r4dl_data2_balanced/model.h5', type=str, help='Trained Keras model file.')
+parser.add_argument('--model', default='../data/nyu.h5', type=str, help='Trained Keras model file.')
+#parser.add_argument('--model', default='../data/models/r4dl_data2_balanced/model.h5', type=str, help='Trained Keras model file.')
 parser.add_argument('--split_eval', default=False, type=bool, help='Split evaluation by ground truth depth value')
-parser.add_argument('--eval_csv', type=str, help='Use a different csv file which contains evaluation data')
+parser.add_argument('--eval_csv', default='fixed_path_256_16_jitters_training_data/nyu2_train2.csv', type=str, help='Use a different csv file which contains evaluation data')
 
 def DepthNorm(depth, maxDepth=1000.0): 
     return maxDepth / depth
@@ -117,7 +117,7 @@ if __name__ == '__main__':
         crop = np.load(BytesIO(data['eigen_test_crop.npy']))
     else:
         from data import get_evaluation_data
-        rgb, depth = get_evaluation_data(args.eval_csv)
+        rgb, depth = get_evaluation_data(args.eval_csv, '../data/')
         crop = None
 
 

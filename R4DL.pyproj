@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{73ccb54d-c394-4589-ac27-1a9727d11c24}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>dataanalysis.py</StartupFile>
+    <StartupFile>evaluate.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>

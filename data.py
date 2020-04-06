@@ -88,6 +88,32 @@ def get_r4dl_train_test_data(batch_size, datadir='./', r4dl_data_csv_file='R4DL_
 
     return train_generator, test_generator
 
+def get_evaluation_data(eval_csv, datadir="./"):
+    eval_csv_file = os.path.join(datadir, eval_csv)
+    with open(eval_csv_file, encoding="utf-8", newline="\n") as eval_file:
+        eval_rows = list((row.strip("\n").strip("\r").split(',') for row in (eval_file) if len(row) > 0))
+    num_images = len(eval_rows)
+    shape_rgb = (num_images, 480, 640, 3)
+    shape_depth = (num_images, 480, 640)
+
+    # read in images and cat rgb and depth
+    rgb = np.zeros(shape_rgb, dtype=np.uint8)
+    depth = np.zeros(shape_depth, dtype=np.float32)
+
+    for i in range(num_images):
+        sample = eval_rows[i]
+        rgb_path = sample[0].strip()
+        gt_path = sample[1].strip()
+
+        x = np.clip(np.asarray(Image.open(rgb_path), dtype=np.uint8).reshape(480, 640, 3), 0, 255)
+
+        y = np.asarray(Image.open(gt_path), dtype=np.float32).reshape(480, 640).copy().astype(float)/25.0
+
+        rgb[i] = x
+        depth[i] = y
+
+    return rgb, depth
+
 def createBorder(x, width, color):
 
     if (len(x.shape) == 3):

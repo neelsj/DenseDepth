@@ -146,9 +146,17 @@ def compute_split_errors(gt, pred, buckets=None):
 
     return rmses
 
-def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False, scale=True, showImages=False, split_errors=False):
-    N = len(rgb)
 
+def save_gt_pred_images(gt, pred, outdir="./"):
+    import matplotlib.pyplot as plt
+    import os
+    for i in range(np.shape(gt)[0]):
+        imgs = np.concatenate((gt[i], pred[i]))
+        plt.imsave(os.path.join(outdir, str(i) + ".png"), imgs)
+
+
+def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False, scale=True, showImages=False, split_errors=False, saveImages=False):
+    N = len(rgb)
     bs = batch_size
 
     predictions = []
@@ -203,6 +211,9 @@ def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False, scale=True, s
 
     predictions = np.stack(predictions, axis=0)
     testSetDepths = np.stack(testSetDepths, axis=0)
+
+    if saveImages:
+        save_gt_pred_images(testSetDepths, predictions)
 
     if split_errors:
         e = compute_split_errors(testSetDepths, predictions)

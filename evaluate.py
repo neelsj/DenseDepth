@@ -4,6 +4,7 @@ import time
 import argparse
 import numpy as np
 import h5py
+from tqdm import tqdm
 
 # Kerasa / TensorFlow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
@@ -24,8 +25,8 @@ from model import create_model
 
 # Argument Parser
 parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estimation via Transfer Learning')
-#parser.add_argument('--model', default='../data/nyu.h5', type=str, help='Trained Keras model file.')
-parser.add_argument('--model', default='../data/models/r4dl_data2_balanced/model.h5', type=str, help='Trained Keras model file.')
+parser.add_argument('--model', default='../data/nyu.h5', type=str, help='Trained Keras model file.')
+#parser.add_argument('--model', default='../data/models/r4dl_data2_balanced/weights.01-0.31.h5', type=str, help='Trained Keras model file.')
 
 def DepthNorm(depth, maxDepth=1000.0): 
     return maxDepth / depth
@@ -103,15 +104,51 @@ if __name__ == '__main__':
         model = load_model(args.model, custom_objects=custom_objects, compile=False)
 
     # Load test data
-    print('Loading test data...', end='')
+    print('Loading test data...')
 
-    import numpy as np
-    from data import extract_zip
-    data = extract_zip('../data/nyu_test.zip')
-    from io import BytesIO
-    rgb = np.load(BytesIO(data['eigen_test_rgb.npy']))
-    depth = np.load(BytesIO(data['eigen_test_depth.npy']))
-    crop = np.load(BytesIO(data['eigen_test_crop.npy']))
+    loadFromZip = False
+
+    if (loadFromZip):
+        import numpy as np
+        from data import extract_zip
+        data = extract_zip('../data/nyu_test.zip')
+        from io import BytesIO
+        rgb = np.load(BytesIO(data['eigen_test_rgb.npy']))
+        depth = np.load(BytesIO(data['eigen_test_depth.npy']))
+        crop = np.load(BytesIO(data['eigen_test_crop.npy']))
+
+    else:
+        #datafile = '../data/data/nyu2_train_test.csv'    
+        datafile = '../data/fixed_path_256_16_jitters_training_data/R4DL_test3.csv'       
+        #datafile = '../data/fixed_path_256_16_jitters_training_data/r4dl_train_scene_holdout.csv'                
+        depthScale = 10/255
+
+        #datafile = '../data/data/nyu2_test.csv'        
+        #depthScale = 1/1000 # scale for nyu2_test.csv
+  
+        with open(datafile, encoding="utf-8", newline="\n") as test_csv:
+            test_data = list((row.strip("\n").split(',') for row in (test_csv) if len(row) > 0))
+
+        test_data = tqdm(test_data)
+
+        rgb = []
+        depth = []
+        crop = None
+
+        for sample in test_data:
+
+            # open rgb and depth images
+            rgb_path = '../data/' + sample[0].strip()
+            gt_path = '../data/' + sample[1].strip()
+        
+            r = np.array(Image.open( rgb_path)).reshape(480,640,3)
+            d = np.array(Image.open( gt_path)).reshape(480,640)*depthScale           
+
+            rgb.append(r)
+            depth.append(d)
+
+        rgb = np.stack(rgb, axis=0)
+        depth = np.stack(depth, axis=0)
 
     print('Test data loaded.\n')
 

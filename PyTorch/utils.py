@@ -2,8 +2,10 @@ import matplotlib
 import matplotlib.cm
 import numpy as np
 
-def DepthNorm(depth, maxDepth=1000.0): 
-    return maxDepth / depth
+def DepthNorm(x, maxDepth=1000.0): 
+    xNorm = x
+    xNorm[x!=0] = maxDepth / x[x!=0]    
+    return xNorm
 
 class AverageMeter(object):
     def __init__(self):
@@ -41,3 +43,14 @@ def colorize(value, vmin=10, vmax=1000, cmap='plasma'):
     img = value[:,:,:3]
 
     return img.transpose((2,0,1))
+
+def compute_errors(gt, pred):
+    thresh = np.maximum((gt / pred), (pred / gt))
+    a1 = (thresh < 1.25   ).mean()
+    a2 = (thresh < 1.25 ** 2).mean()
+    a3 = (thresh < 1.25 ** 3).mean()
+    abs_rel = np.mean(np.abs(gt - pred) / gt)
+    rmse = (gt - pred) ** 2
+    rmse = np.sqrt(rmse.mean())
+    log_10 = (np.abs(np.log10(gt)-np.log10(pred))).mean()
+    return a1, a2, a3, abs_rel, rmse, log_10

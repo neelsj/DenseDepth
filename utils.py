@@ -107,7 +107,7 @@ def compute_errors(gt, pred):
     log_10 = (np.abs(np.log10(gt)-np.log10(pred))).mean()
     return a1, a2, a3, abs_rel, rmse, log_10
 
-def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False, scale=True, showImages=False):
+def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False, scale=False, showImages=False):
     N = len(rgb)
 
     bs = batch_size
@@ -121,26 +121,6 @@ def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False, scale=True, s
         # Compute results
         true_y = depth[(i)*bs:(i+1)*bs,:,:]
         pred_y = scale_up(2, predict(model, x/255, minDepth=10, maxDepth=1000, batch_size=bs)[:,:,:,0])
-        
-        if(showImages):
-
-            for b in range(bs):
-                plt.subplot(1,3,1)
-                plt.imshow(x[b,:,:,:])    
-                plt.show(block=False)
-
-                vmin = np.min(true_y[b,:,:])
-                vmax = np.max(true_y[b,:,:])
-
-                plt.subplot(1,3,2)
-                plt.imshow(true_y[b,:,:], vmin=vmin, vmax=vmax)    
-                plt.show(block=False)
-
-                plt.subplot(1,3,3)
-                plt.imshow(pred_y[b,:,:], vmin=vmin, vmax=vmax)    
-                plt.show(block=False)
-
-                plt.waitforbuttonpress()
 
         # Test time augmentation: mirror image estimate
         pred_y_flip = scale_up(2, predict(model, x[...,::-1,:]/255, minDepth=10, maxDepth=1000, batch_size=bs)[:,:,:,0])
@@ -148,6 +128,32 @@ def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False, scale=True, s
         if (scale):
             pred_y *= 10.0
             pred_y_flip *= 10.0
+        
+        if(showImages):
+
+            for b in range(bs):
+
+                rmse = (true_y[b,:,:] - pred_y[b,:,:]) ** 2
+                rmse = np.sqrt(rmse.mean())
+
+                if (rmse < .5):
+
+                    plt.subplot(1,3,1)
+                    plt.imshow(x[b,:,:,:])    
+                    plt.show(block=False)
+
+                    vmin = np.min(true_y[b,:,:])
+                    vmax = np.max(true_y[b,:,:])
+
+                    plt.subplot(1,3,2)
+                    plt.imshow(true_y[b,:,:], vmin=vmin, vmax=vmax)    
+                    plt.show(block=False)
+
+                    plt.subplot(1,3,3)
+                    plt.imshow(pred_y[b,:,:], vmin=vmin, vmax=vmax)    
+                    plt.show(block=False)
+
+                    plt.waitforbuttonpress()
 
         if (crop is not None):
             # Crop based on Eigen et al. crop

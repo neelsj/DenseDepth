@@ -7,7 +7,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
 from loss import depth_loss_function
 from utils import predict, save_images, load_test_data
 from model import create_model
-from data import get_nyu_train_test_data, get_unreal_train_test_data, get_r4dl_train_test_data
+from data import get_train_test_data
 from callbacks import get_nyu_callbacks
 
 from keras.optimizers import Adam
@@ -21,10 +21,9 @@ import tensorflow as tf
 
 # Argument Parser
 parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estimation via Transfer Learning')
-parser.add_argument('--data', default='nyu', type=str, help='Training dataset.')
 parser.add_argument('--datadir', default='E:/Source/R4DL/data/', type=str, help='Dataset directory.')
-parser.add_argument('--datazip', default='', type=str, help='Dataset zip file.')
-parser.add_argument('--datacsv', default='', type=str, help='Dataset csv file.')
+parser.add_argument('--datacsv', default='data/nyu2_train.csv', type=str, help='Train dataset csv file.')
+parser.add_argument('--testcsv', default='data/nyu2_test.csv', type=str, help='Test dataset csv file.')
 parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
 parser.add_argument('--bs', type=int, default=4, help='Batch size')
 parser.add_argument('--epochs', type=int, default=20, help='Number of epochs')
@@ -33,9 +32,11 @@ parser.add_argument('--gpuids', type=str, default='0', help='IDs of GPUs to use'
 parser.add_argument('--mindepth', type=float, default=10.0, help='Minimum of input depths')
 parser.add_argument('--maxdepth', type=float, default=1000.0, help='Maximum of input depths')
 parser.add_argument('--name', type=str, default='densedepth_nyu', help='A name to attach to the training session')
-parser.add_argument('--checkpoint', type=str, default='', help='Start training from an existing model.')
+parser.add_argument('--checkpoint', type=str, default='../data/nyu.h5', help='Start training from an existing model.')
 parser.add_argument('--full', dest='full', action='store_true', help='Full training with metrics, checkpoints, and image samples.')
 parser.add_argument('--border', type=int, default=8, help='Image border')
+parser.add_argument('--sigmaRGB', type=float, default=0.0, help='Blur for RGB training images')
+parser.add_argument('--sigmaD', type=float, default=0.0, help='Blur for depth training images')
 
 def hollFillDepthImages(args, r4dl_data_csv_file='r4dl_path_256_data/R4DL_train.csv', r4dl_data_csv_outfile='r4dl_path_256_data/R4DL_train_proc.csv'):
 
@@ -95,9 +96,7 @@ def main(args):
     model = create_model(existing = model_file)
 
     # Data loaders
-    if args.data == 'nyu': train_generator, test_generator = get_nyu_train_test_data( args.bs,  args.datadir, nyu_data_train_csv=args.datacsv)
-    if args.data == 'unreal': train_generator, test_generator = get_unreal_train_test_data( args.bs, args.datadir )
-    if args.data == 'r4dl': train_generator, test_generator = get_r4dl_train_test_data( args.bs, args.datadir, r4dl_data_csv_file=args.datacsv)
+    train_generator, test_generator = get_train_test_data( args.bs, args.datadir, data_csv_file=args.datacsv, test_csv_file=args.testcsv, sigmaRGB=args.sigmaRGB, sigmaD=args.sigmaD)
 
     # Training session details
     runID = str(int(time.time())) + '-n' + str(len(train_generator)) + '-e' + str(args.epochs) + '-bs' + str(args.bs) + '-lr' + str(args.lr) + '-' + args.name
@@ -148,7 +147,7 @@ def main(args):
 
 if __name__ == '__main__':
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     if ('PT_DATA_DIR' in os.environ):
         args.datadir = os.environ['PT_DATA_DIR'] + '/'

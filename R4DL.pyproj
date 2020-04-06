@@ -5,14 +5,14 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{73ccb54d-c394-4589-ac27-1a9727d11c24}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>dataanalysis.py</StartupFile>
+    <StartupFile>train.py</StartupFile>
     <SearchPath />
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <InterpreterId>CondaEnv|CondaEnv|tensorflow1</InterpreterId>
-    <CommandLineArguments>--data r4dl --gpus 1 --bs 4 --checkpoint densenet169_weights_tf_dim_ordering_tf_kernels_notop.h5 --datacsv fixed_path_256_16_jitters_training_data/R4DL_train_proc2.csv --epochs 10 --full</CommandLineArguments>
+    <CommandLineArguments>--gpus 1 --bs 4 --checkpoint nyu.h5 --datacsv data/nyu2_train2.csv --testcsv fixed_path_256_16_jitters_training_data/R4DL_test3.csv --epochs 1 --full --lr 1e-10</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <Name>R4DL</Name>
   </PropertyGroup>

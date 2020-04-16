@@ -7,7 +7,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '5'
 from loss import depth_loss_function
 from utils import predict, save_images, load_test_data
 from model import create_model
-from data import get_train_test_data
+from data import get_train_test_data, get_evaluation_data
 from callbacks import get_nyu_callbacks
 
 from keras.optimizers import Adam
@@ -37,6 +37,10 @@ parser.add_argument('--full', dest='full', action='store_true', help='Full train
 parser.add_argument('--border', type=int, default=8, help='Image border')
 parser.add_argument('--sigmaRGB', type=float, default=0.0, help='Blur for RGB training images')
 parser.add_argument('--sigmaD', type=float, default=0.0, help='Blur for depth training images')
+parser.add_argument('--w1', type=float, default=1.0, help='Blur for depth training images')
+parser.add_argument('--w2', type=float, default=1.0, help='Blur for depth training images')
+parser.add_argument('--w3', type=float, default=0.1, help='Blur for depth training images')
+
 
 def hollFillDepthImages(args, r4dl_data_csv_file='r4dl_path_256_data/R4DL_train.csv', r4dl_data_csv_outfile='r4dl_path_256_data/R4DL_train_proc.csv'):
 
@@ -96,7 +100,8 @@ def main(args):
     model = create_model(existing = model_file)
 
     # Data loaders
-    train_generator, test_generator = get_train_test_data( args.bs, args.datadir, data_csv_file=args.datacsv, test_csv_file=args.testcsv, sigmaRGB=args.sigmaRGB, sigmaD=args.sigmaD)
+    train_generator, test_generator = get_train_test_data(args.bs, args.datadir, data_csv_file=args.datacsv, test_csv_file=args.testcsv, 
+                                                          nyuTest='nyu2_test.csv' in args.testcsv, sigmaRGB=args.sigmaRGB, sigmaD=args.sigmaD)
 
     # Training session details
     runID = str(int(time.time())) + '-n' + str(len(train_generator)) + '-e' + str(args.epochs) + '-bs' + str(args.bs) + '-lr' + str(args.lr) + '-' + args.name
@@ -132,13 +137,14 @@ def main(args):
     # Compile the model
     print('\n\n\n', 'Compiling model..', runID, '\n\n\tGPU ' + (str(args.gpus)+' gpus' if args.gpus > 1 else args.gpuids)
             + '\t\tBatch size [ ' + str(args.bs) + ' ] ' + ' \n\n')
-    model.compile(loss=depth_loss_function, optimizer=optimizer)
+    model.compile(loss=depth_loss_function(w1=args.w1, w2=args.w2, w3=args.w3), optimizer=optimizer)
 
     print('Ready for training using %d GPU and %d CPU threads!\n' % (args.gpus, threads))
 
     # Callbacks
-    callbacks = get_nyu_callbacks(model, basemodel, train_generator, test_generator, load_test_data(args.datadir) if args.full else None , runPath)
-
+    #callbacks = get_nyu_callbacks(model, basemodel, train_generator, test_generator, load_test_data(args.datadir) if args.full else None , runPath)
+    callbacks = get_nyu_callbacks(model, basemodel, train_generator, test_generator, get_evaluation_data(args.testcsv, args.datadir) if args.full else None , runPath)
+    
     # Start training
     model.fit_generator(train_generator, callbacks=callbacks, validation_data=test_generator, epochs=args.epochs, shuffle=True, workers=threads)
 

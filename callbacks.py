@@ -73,7 +73,33 @@ def get_nyu_callbacks(model, basemodel, train_generator, test_generator, test_se
                 logs.update({'log10': e[5]})
 
             super().on_epoch_end(epoch, logs)
+
+
+    class BatchModelSave(keras.callbacks.Callback):
+
+        def __init__(self, runPath):
+            super().__init__()
+            self.runPath = runPath
+            self.epoch = 0
+            self.model_batch_save_freq = 10
+
+        def on_train_batch_begin(self, batch, logs=None):
+
+            #if (batch % self.model_batch_save_freq == 0):
+            #    basemodel.save(self.runPath + '/epoch_%02d_batch_%04d_model.h5' % (self.epoch, batch))
+
+            print('\n\nFor epoch {} batch {}, loss is {:7.2f}.'.format(self.epoch, batch, logs['loss']))
+
+            super().on_train_batch_begin(batch, logs)
+
+        def on_epoch_begin(self, epoch, logs=None):                
+            self.epoch = epoch
+            super().on_epoch_begin(epoch, logs)
+
+
     callbacks.append( LRTensorBoard(log_dir=runPath) )
+
+    callbacks.append( BatchModelSave(runPath) )
 
     # Callback: Learning Rate Scheduler
     lr_schedule = keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.7, patience=5, min_lr=0.00009, min_delta=1e-2)

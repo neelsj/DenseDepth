@@ -169,6 +169,13 @@ def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False, scale=True, s
         true_y = depth[(i) * bs:(i + 1) * bs, :, :]
         pred_y = scale_up(2, predict(model, x / 255, minDepth=10, maxDepth=1000, batch_size=bs)[:, :, :, 0])
 
+        # Test time augmentation: mirror image estimate
+        pred_y_flip = scale_up(2, predict(model, x[...,::-1,:]/255, minDepth=10, maxDepth=1000, batch_size=bs)[:,:,:,0])
+
+        if (scale):
+            pred_y *= 10.0
+            pred_y_flip *= 10.0
+
         if (showImages):
 
             for b in range(bs):
@@ -188,15 +195,6 @@ def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False, scale=True, s
                 plt.show(block=False)
 
                 plt.waitforbuttonpress()
-
-        # Test time augmentation: mirror image estimate
-        pred_y_flip = scale_up(2,
-                               predict(model, x[..., ::-1, :] / 255, minDepth=10, maxDepth=1000, batch_size=bs)[:, :, :,
-                               0])
-
-        if (scale):
-            pred_y *= 10.0
-            pred_y_flip *= 10.0
 
         if (crop is not None):
             # Crop based on Eigen et al. crop
@@ -223,8 +221,7 @@ def evaluate(model, rgb, depth, crop, batch_size=6, verbose=False, scale=True, s
 
         if verbose:
             print("{:>10}, {:>10}, {:>10}, {:>10}, {:>10}, {:>10}".format('a1', 'a2', 'a3', 'rel', 'rms', 'log_10'))
-            print(
-                "{:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}".format(e[0], e[1], e[2], e[3], e[4], e[5]))
+            print("{:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}".format(e[0],e[1],e[2],e[3],e[4],e[5]))
 
     return e
 

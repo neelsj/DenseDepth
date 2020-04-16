@@ -36,7 +36,7 @@ def get_data(batch_size, data_train_csv, test_csv_file):
 
     return train, test, shape_rgb, shape_depth
 
-def get_train_test_data(batch_size, datadir='./', data_csv_file='data/nyu2_train.csv', test_csv_file='data/nyu2_test.csv', sigmaRGB=0, sigmaD=0, depthScale=1):
+def get_train_test_data(batch_size, datadir='./', data_csv_file='data/nyu2_train.csv', test_csv_file='data/nyu2_test.csv', nyuTest=False, sigmaRGB=0, sigmaD=0):
     data_train_csv = os.path.join(datadir, data_csv_file)
     test_csv_file = os.path.join(datadir, test_csv_file)
 
@@ -51,7 +51,11 @@ def get_train_test_data(batch_size, datadir='./', data_csv_file='data/nyu2_train
         test[i][1] = os.path.join(datadir, test[i][1])
 
     train_generator = NYU_BasicAugmentRGBSequence(train, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth, sigmaRGB=sigmaRGB, sigmaD=sigmaD)
-    test_generator = NYU_BasicRGBSequence(test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth, depthScale=depthScale)
+
+    if (nyuTest):
+        test_generator = NYU_BasicRGBSequence(test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
+    else:
+        test_generator = NYU_BasicAugmentRGBSequence(test, batch_size=batch_size, shape_rgb=shape_rgb, shape_depth=shape_depth)
 
     #train_generator.__getitem__(0, showImage=True)
     test_generator.__getitem__(0)
@@ -81,8 +85,8 @@ def get_evaluation_data(eval_csv, datadir="./"):
 
         rgb[i] = x
         depth[i] = y
-
-    return rgb, depth
+    
+    return {'rgb': rgb, 'depth': depth, 'crop': None}
 
 def createBorder(x, width, color):
 
@@ -174,14 +178,13 @@ class NYU_BasicAugmentRGBSequence(Sequence):
         return batch_x, batch_y
 
 class NYU_BasicRGBSequence(Sequence):
-    def __init__(self, dataset, batch_size,shape_rgb, shape_depth, depthScale=1):
+    def __init__(self, dataset, batch_size,shape_rgb, shape_depth):
         self.dataset = dataset
         self.batch_size = batch_size
         self.N = len(self.dataset)
         self.shape_rgb = shape_rgb
         self.shape_depth = shape_depth
         self.maxDepth = 1000.0
-        self.depthScale = depthScale
 
     def __len__(self):
         return int(np.ceil(self.N / float(self.batch_size)))
@@ -197,9 +200,6 @@ class NYU_BasicRGBSequence(Sequence):
 
             x = np.clip(np.asarray(Image.open( rgb_path)).reshape(480,640,3)/255,0,1)
             y = np.asarray(Image.open(gt_path), dtype=np.float32).reshape(480,640,1).copy().astype(float) / 10.0
-
-            vmin = np.min(y)
-            vmax = np.max(y)
 
             y = DepthNorm(y, maxDepth=self.maxDepth)
 

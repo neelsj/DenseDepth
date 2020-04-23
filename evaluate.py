@@ -26,9 +26,9 @@ from model import create_model
 # Argument Parser
 parser = argparse.ArgumentParser(description='High Quality Monocular Depth Estimation via Transfer Learning')
 #parser.add_argument('--model', default='../data/nyu.h5', type=str, help='Trained Keras model file.')
-parser.add_argument('--model', default='../data/models/r4dl_holdout_w20/weights.01-0.58.h5', type=str, help='Trained Keras model file.')
+parser.add_argument('--model', default='../data/models/r4dl_more_epochs/model_epoch_04_rms_0.41.h5', type=str, help='Trained Keras model file.')
 parser.add_argument('--split_eval', default=False, type=bool, help='Split evaluation by ground truth depth value')
-parser.add_argument('--eval_csv', default='fixed_path_256_16_jitters_training_data/R4DL_test3.csv', type=str, help='Use a different csv file which contains evaluation data')
+parser.add_argument('--eval_csv', default='fixed_path_256_16_jitters_training_data/R4DL_test2.csv', type=str, help='Use a different csv file which contains evaluation data')
 
 def DepthNorm(depth, maxDepth=1000.0): 
     return maxDepth / depth
@@ -86,6 +86,8 @@ if __name__ == '__main__':
 
     args, _ = parser.parse_known_args()
 
+    showImages = False
+
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     K.set_session(tf.Session(config=config))
@@ -104,6 +106,7 @@ if __name__ == '__main__':
         model.save(file + '.h5')
     else:
         model = load_model(args.model, custom_objects=custom_objects, compile=False)
+        model.save(file + '.h5')    
 
     # Load test data
     print('Loading test data...', end='')
@@ -130,13 +133,13 @@ if __name__ == '__main__':
     print('Testing...')
 
     if args.split_eval:
-        e = evaluate(model, rgb, depth, crop, batch_size=6, scale=True, showImages=True, split_errors=True)
+        e = evaluate(model, rgb, depth, crop, batch_size=6, scale=True, showImages=showImages, split_errors=True)
 
         for bucket in e:
             print(" range: {:10.4f} to {:10.4f}, rmse {:10.4f}, avg num vals per img {:10.4f}".format(bucket[0], bucket[1], bucket[2], bucket[3]))
 
     else:
-        e = evaluate(model, rgb, depth, crop, batch_size=6, scale=True, showImages=True, saveImages=False)
+        e = evaluate(model, rgb, depth, crop, batch_size=6, scale=True, showImages=showImages, saveImages=False)
 
         print("{:>10}, {:>10}, {:>10}, {:>10}, {:>10}, {:>10}".format('a1', 'a2', 'a3', 'rel', 'rms', 'log_10'))
         print("{:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}, {:10.4f}".format(e[0],e[1],e[2],e[3],e[4],e[5]))

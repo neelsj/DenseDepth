@@ -1,5 +1,6 @@
 import io
 import random
+import sys
 import numpy as np
 from PIL import Image
 
@@ -29,6 +30,8 @@ def get_nyu_callbacks(model, basemodel, train_generator, test_generator, test_se
             self.num_samples = 6
             self.train_idx = np.random.randint(low=0, high=len(train_generator), size=10)
             self.test_idx = np.random.randint(low=0, high=len(test_generator), size=10)
+
+            self.bestErr = np.inf
 
         def on_epoch_end(self, epoch, logs=None):            
             if not test_set == None:
@@ -72,41 +75,21 @@ def get_nyu_callbacks(model, basemodel, train_generator, test_generator, test_se
                 logs.update({'rms': e[4]})
                 logs.update({'log10': e[5]})
 
+                if (e[4] < self.bestErr):
+                    modelSavePath = runPath + '/model_epoch_%02d_rms_%.2f.h5' % (epoch, e[4])
+
+                    print("Epoch %02d: rms improved from %f to %f, saving model to %s" % (epoch, self.bestErr, e[4], modelSavePath))
+
+                    self.bestErr = e[4]                    
+                    basemodel.save(modelSavePath)                    
+
             super().on_epoch_end(epoch, logs)
 
-
-    class BatchModelSave(keras.callbacks.Callback):
-
-        def __init__(self, runPath):
-            super().__init__()
-            self.runPath = runPath
-            self.epoch = 0
-            self.model_batch_save_freq = 10
-
-        def on_train_batch_begin(self, batch, logs=None):
-
-            #if (batch % self.model_batch_save_freq == 0):
-            #    basemodel.save(self.runPath + '/epoch_%02d_batch_%04d_model.h5' % (self.epoch, batch))
-
-            print('\n\nFor epoch {} batch {}, loss is {:7.2f}.'.format(self.epoch, batch, logs['loss']))
-
-            super().on_train_batch_begin(batch, logs)
-
-        def on_epoch_begin(self, epoch, logs=None):                
-            self.epoch = epoch
-            super().on_epoch_begin(epoch, logs)
-
-
     callbacks.append( LRTensorBoard(log_dir=runPath) )
-
-    callbacks.append( BatchModelSave(runPath) )
 
     # Callback: Learning Rate Scheduler
     lr_schedule = keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.7, patience=5, min_lr=0.00009, min_delta=1e-2)
     callbacks.append( lr_schedule ) # reduce learning rate when stuck
 
-    # Callback: save checkpoints
-    callbacks.append(keras.callbacks.ModelCheckpoint(runPath + '/weights.{epoch:02d}-{val_loss:.2f}.hdf5', monitor='val_loss', 
-        verbose=1, save_best_only=True, save_weights_only=False, mode='min', period=1))
-
+   
     return callbacks
